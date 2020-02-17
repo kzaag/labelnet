@@ -1,0 +1,14 @@
+key=32_byte_key_base64_encoded
+
+dataroot=./
+
+jwtiss=labelnet
+jwtmadd=3
+
+user=login_user
+pwd=login_password
+
+url=127.0.0.1:9543
+
+# uncomment following line to start saving files for this specific group
+#grp=24
