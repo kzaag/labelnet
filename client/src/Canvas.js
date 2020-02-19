@@ -131,7 +131,7 @@ export class Canvas extends Component {
             <div className="row">
               <div className="input-field col s12">
                 <select value={this.cl} onChange={(e) => this.cl = Number(e.target.value)}>
-                  {clrng().map(x => <option key={x} value={x}>{mapcl(x)}</option>)}
+                  {clrng().map(x => <option key={x} value={x}>{mapcl(x) + " " + mapcl(x, 1)}</option>)}
                 </select>
                 <label>class</label>
               </div>

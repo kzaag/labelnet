@@ -49,11 +49,15 @@ export function rnds(len) {
 }
 
 export function clrng() {
-    return [1, 2, 3];
+    let arr = [];
+    for(let k in LABELS) {
+        arr.push(Number(k));
+    }
+    return arr;
 }
 
-export function mapcl(key) {
-    return LABELS[key] ?? "unknown";
+export function mapcl(key, i = 0) {
+    return LABELS[key][i] ?? "unknown";
 }
 
 export function R(v) {
