@@ -310,25 +310,31 @@ export class App extends Component {
 
   getmsize() {
 
-    return { w: document.body.scrollWidth * (8 / 12), h: -1 };
+    return { w: document.body.scrollWidth * (8 / 12), h: document.body.scrollHeight * (8 / 12)};
 
   }
 
-  getscale(osize, msize) {
+  getscale(osize, msize) {    
+    let csize = { w: osize.w, h: osize.h};
+    let scale = 1;
+    
+    do {
+      if (osize.w > msize.w) {
+      scale = scale * ( msize.w / osize.w )
+      csize.w = csize.w * scale;
+      csize.h = csize.h * scale;
 
-    let s2 = { w: osize.w, h: osize.h };
+      }else if( osize.h > msize.h){
+      scale = scale * ( msize.h / osize.h)
+      csize.h = csize.h * scale;
+      csize.w = csize.w * scale;
+      }
 
-    if (osize.w > msize.w) {
+    }while( msize.w < csize.w && msize.h < csize.h)
 
-      let scw = msize.w / osize.w;
-      s2.w = scw;
-      s2.h = scw;
-
-      return s2
-
-    };
-
-    return { w: 1, h: 1 };
+    return { w: scale, h: scale };
+    
+    
   }
 
   getdsize(scale, osize) {
