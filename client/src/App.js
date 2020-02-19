@@ -548,13 +548,13 @@ export class App extends Component {
           <div className="row">
 
             <div className="col s8">
-              <div style={{ width: this.state.dsize.w, height: this.state.dsize.h }}>
+              <div style={{ width: this.state.dsize.w, height: this.state.dsize.h}}>
                 <img ref="imageView"
                   width={this.state.dsize.w}
                   height={this.state.dsize.h}
                   src="a.jpg"
                   alt=""
-                  style={{ position: "fixed" }}>
+                  style={{ position: "fixed"}}>
                 </img>
                 {this.state.cs && this.state.cs.map((lb, i) => <React.Fragment key={i}>{lb.canvas}</React.Fragment>)}
               </div>

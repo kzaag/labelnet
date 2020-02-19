@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { mps, rnds, clrng, mapcl, R, rndc } from './helpers';
+import { queryHelpers } from '@testing-library/react';
 
 export class Canvas extends Component {
 
@@ -18,6 +19,11 @@ export class Canvas extends Component {
   p2 = null;
 
   cl = 1;
+
+  labels = [];
+  labels = clrng();
+  popupH = this.labels.length * 65;
+
 
   async componentDidMount() {
 
@@ -112,9 +118,9 @@ export class Canvas extends Component {
     if (this.canvas == null || this.p1 == null) {
       return;
     }
-
+    
     this.p2 = mps(this.canvas, e);
-
+    
     this.ctx.clearRect(0, 0, this.props.size.w, this.props.size.h);
 
     this.ctx.beginPath();
@@ -127,7 +133,7 @@ export class Canvas extends Component {
     return (
       <React.Fragment>
         <div id={this.mid} className="modal">
-          <div className="modal-content">
+          <div className="modal-content" style={{minHeight:Math.abs(this.popupH)}}>
             <div className="row">
               <div className="input-field col s12">
                 <select value={this.cl} onChange={(e) => this.cl = Number(e.target.value)}>
@@ -136,7 +142,7 @@ export class Canvas extends Component {
                 <label>class</label>
               </div>
               {this.state.p1 && this.state.p2 && (
-                <div style={{ overflow: "hidden", marginLeft: 10, width: Math.abs(this.state.p1.x - this.state.p2.x), height: Math.abs(this.state.p1.y - this.state.p2.y) }}>
+                <div style={{ overflow: "hidden", marginLeft: 10 , width: Math.abs(this.state.p1.x - this.state.p2.x), height: Math.abs(this.state.p1.y - this.state.p2.y) }}>
                   <img src={this.props.img.src} alt="" width={Math.round(this.props.size.w) - 5} height={Math.round(this.props.size.h) - 5} style={{ marginTop: -Math.min(this.state.p1.y, this.state.p2.y), marginLeft: -Math.min(this.state.p1.x, this.state.p2.x) }}></img>
                 </div>
               )}
