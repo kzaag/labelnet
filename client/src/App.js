@@ -46,8 +46,6 @@ export class App extends Component {
 
     this.state.maxsize = this.getmsize();
 
-    console.log(this.state.maxsize);
-
     window.addEventListener('resize', async () => {
 
       await this.dparams(this.state.osize);
