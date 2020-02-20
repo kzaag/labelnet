@@ -76,7 +76,7 @@ export class App extends Component {
           this.openpostmdl();
           break;
         case 's':
-          if(this.sopen) {
+          if (this.sopen) {
             this.closesidenav();
           } else {
             this.opensidenav();
@@ -310,25 +310,29 @@ export class App extends Component {
 
   getmsize() {
 
-    return { w: document.body.scrollWidth * (8 / 12), h: -1 };
+    return { w: document.body.scrollWidth * (8 / 12), h: window.innerHeight - 100 };
 
   }
 
   getscale(osize, msize) {
 
-    let s2 = { w: osize.w, h: osize.h };
+    let ax = msize.w / osize.w;
+    let ay = msize.h / osize.h;
 
-    if (osize.w > msize.w) {
+    let scale = 1;
 
-      let scw = msize.w / osize.w;
-      s2.w = scw;
-      s2.h = scw;
+    if(ax >= 1 && ay >= 1) {
 
-      return s2
+      scale = 1;
 
-    };
+    } else {
 
-    return { w: 1, h: 1 };
+      scale = Math.min(ax, ay);
+    
+    }
+
+    return { w: scale, h: scale };
+
   }
 
   getdsize(scale, osize) {
@@ -506,7 +510,7 @@ export class App extends Component {
         <div className="navbar-fixed">
           <nav>
             <div className="nav-wrapper">
-              <a href="#!" className="brand-logo" style={{marginLeft: 10}}>Labelnet</a>
+              <a href="#!" className="brand-logo" style={{ marginLeft: 10 }}>Labelnet</a>
               <ul className="right hide-on-med-and-down">
                 <li>
                   <a
@@ -548,13 +552,13 @@ export class App extends Component {
           <div className="row">
 
             <div className="col s8">
-              <div style={{ width: this.state.dsize.w, height: this.state.dsize.h}}>
+              <div style={{ width: this.state.dsize.w, height: this.state.dsize.h }}>
                 <img ref="imageView"
                   width={this.state.dsize.w}
                   height={this.state.dsize.h}
                   src="a.jpg"
                   alt=""
-                  style={{ position: "fixed"}}>
+                  style={{ position: "fixed" }}>
                 </img>
                 {this.state.cs && this.state.cs.map((lb, i) => <React.Fragment key={i}>{lb.canvas}</React.Fragment>)}
               </div>
@@ -602,7 +606,7 @@ export class App extends Component {
 
                   <button type="button"
                     onClick={this.opensidenav.bind(this)}
-                    className="waves-effect waves-light btn" 
+                    className="waves-effect waves-light btn"
                     style={{ marginTop: 5 }}>Selected ( s )</button>
 
                   <button type="button"
