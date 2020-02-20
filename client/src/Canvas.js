@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { mps, rnds, clrng, mapcl, R, rndc } from './helpers';
-import { queryHelpers } from '@testing-library/react';
 
 export class Canvas extends Component {
 
