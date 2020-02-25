@@ -480,7 +480,7 @@ export class App extends Component {
       if (cs[i].cl === -1) {
         continue;
       }
-      lbl += this.cats(cs[i].cl) + "\n";
+      lbl += this.cats(cs[i]) + "\n";
     }
 
     lbl += this.fits() + "\n";
