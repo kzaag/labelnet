@@ -17,7 +17,7 @@ export class Canvas extends Component {
   p1 = null;
   p2 = null;
 
-  cl = 1;
+  cl = -1;//lrng()[0];
 
   labels = [];
   labels = clrng();
@@ -135,7 +135,10 @@ export class Canvas extends Component {
           <div className="modal-content" style={{minHeight:Math.abs(this.popupH)}}>
             <div className="row">
               <div className="input-field col s12">
-                <select value={this.cl} onChange={(e) => this.cl = Number(e.target.value)}>
+                <select id="meselect" value={this.cl} onChange={(e) => {
+                      this.cl = Number(e.target.value);
+                  }}>
+                    <option key="-1" value="-1" disabled>available labels...</option>
                   {clrng().map(x => <option key={x} value={x}>{mapcl(x) + " " + mapcl(x, 1)}</option>)}
                 </select>
                 <label>class</label>

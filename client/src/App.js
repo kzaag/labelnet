@@ -480,7 +480,7 @@ export class App extends Component {
       if (cs[i].cl === -1) {
         continue;
       }
-      lbl += this.cats(cs[i]) + "\n";
+      lbl += this.cats(cs[i].cl) + "\n";
     }
 
     lbl += this.fits() + "\n";
@@ -531,7 +531,9 @@ export class App extends Component {
                   <div className="card" style={{ borderStyle: "solid", borderColor: lb.color }}>
                     <div className="card-content">
                       <pre>
-                        {this.cats(lb)}
+                        {
+                        this.cats(lb)
+                        }
                       </pre>
                       <div className="row">
                         <button className="waves-effect waves-teal btn red darken-1 right-align" style={{ width: "100%" }}
