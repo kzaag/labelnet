@@ -48,7 +48,7 @@ export class App extends Component {
 
     window.addEventListener('resize', async () => {
 
-      await this.dparams(this.state.osize);
+      await this.setdisplparams(this.state.osize);
 
       for (let i = 0; i < this.state.cs.length; i++) {
         this.state.cs[i].cl = -1;
@@ -130,7 +130,7 @@ export class App extends Component {
     await this.setState({ queue: rmret(queue, ix), ix: ix });
 
 
-    await this.rmp(-1);
+    await this.removeCanvas(-1);
 
     await this.openImage(null);
 
@@ -142,7 +142,7 @@ export class App extends Component {
       return;
     }
 
-    await this.lblgen();
+    await this.labelGenerate();
 
     let elem = document.getElementById("cmodal");
     let instance = window.M.Modal.getInstance(elem);
@@ -212,7 +212,7 @@ export class App extends Component {
 
     window.M.updateTextFields();
 
-    this.dparams({ w: 800, h: 500 });
+    this.setdisplparams({ w: 800, h: 500 });
 
   }
 
@@ -335,7 +335,7 @@ export class App extends Component {
 
   }
 
-  getdsize(scale, osize) {
+  getdisplsize(scale, osize) {
 
     let dsize = { w: osize.w * scale.w, h: osize.h * scale.h };
 
@@ -343,11 +343,11 @@ export class App extends Component {
 
   }
 
-  dparams(osize) {
+  setdisplparams(osize) {
 
     let msize = this.getmsize();
     let scale = this.getscale(osize, msize);
-    let dsize = this.getdsize(scale, osize);
+    let dsize = this.getdisplsize(scale, osize);
 
     this.setState({ maxsize: msize, osize: osize, dsize: dsize, scale: scale });
 
@@ -376,7 +376,7 @@ export class App extends Component {
 
         let osize = { w: this.width, h: this.height };
 
-        instance.dparams(osize);
+        instance.setdisplparams(osize);
 
         instance.fname = file.name;
 
@@ -396,11 +396,11 @@ export class App extends Component {
 
   }
 
-  dlen() {
+  doneLength() {
     return (this.state.done && this.state.done.length) || 0;
   }
 
-  qlen() {
+  queueLength() {
     return (this.state.queue && this.state.queue.length) || 0;
   }
 
@@ -424,7 +424,7 @@ export class App extends Component {
   }
 
   // remove object at index
-  async rmp(ix) {
+  async removeCanvas(ix) {
 
     if (ix === -1) {
 
@@ -463,7 +463,7 @@ export class App extends Component {
     window.location = "/";
   }
 
-  lblgen() {
+  labelGenerate() {
 
     let cs = this.state.cs;
 
@@ -537,7 +537,7 @@ export class App extends Component {
                       </pre>
                       <div className="row">
                         <button className="waves-effect waves-teal btn red darken-1 right-align" style={{ width: "100%" }}
-                          type="button" onClick={() => this.rmp(this.state.cs.indexOf(lb))}>
+                          type="button" onClick={() => this.removeCanvas(this.state.cs.indexOf(lb))}>
                           Delete
                         </button>
                       </div>
@@ -598,7 +598,7 @@ export class App extends Component {
                   })}</p>
                 </div>
                 <div>
-                  <h5>Done: {this.dlen()} / {this.dlen() + this.qlen()} </h5>
+                  <h5>Done: {this.doneLength()} / {this.doneLength() + this.queueLength()} </h5>
                   <p>{this.state.done && this.state.done.map((n, i) => {
                     return <span key={i} style={{ color: "grey" }}>{n + " "}</span>
                   })}</p>

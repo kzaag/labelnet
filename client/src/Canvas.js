@@ -24,6 +24,8 @@ export class Canvas extends Component {
   popupH = this.labels.length * 65;
 
 
+  handler = this.resetev.bind(this);
+
   async componentDidMount() {
 
     this.canvas = document.getElementById(this.cid);
@@ -44,6 +46,8 @@ export class Canvas extends Component {
       this.reset();
 
     }, false);
+
+    window.addEventListener("keyup", this.handler);
 
     // window.addEventListener(this.props.resize, () => {
     //   console.log(this.props.size.w - 5, this.props.size.h - 5);
@@ -68,6 +72,15 @@ export class Canvas extends Component {
 
     e.preventDefault();
     this.p1 = mps(this.canvas, e);
+  }
+
+  resetev(e) {
+
+    if(e.key === "Escape") {
+      this.reset();
+    }
+
+
   }
 
   reset() {
@@ -108,6 +121,7 @@ export class Canvas extends Component {
     this.p1 = null;
     this.p2 = null;
     this.props.onfin(R(x1), R(y1), R(x2), R(y2), this.cl, this.state.ccolor);
+    window.removeEventListener("keyup", this.handler);
   }
 
   mmove(e) {
