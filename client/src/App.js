@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Canvas } from './Canvas';
-import { post as apipost } from './api';
+import { post as apipost, getix, getimg } from './api';
 import { pushret, mapcl, rnds, R, rmtoken, rmret } from './helpers';
 import { DEFAULT_SET, DEFAULT_SSET } from './config';
 
@@ -35,8 +35,10 @@ export class App extends Component {
     sset: DEFAULT_SSET,
     set: DEFAULT_SET,
     lname: "",
-    lbody: ""
-  }
+    lbody: "",
+    remote: false,
+    rQueue: []
+  };
 
   fname = "";
   sopen = false;
@@ -70,7 +72,7 @@ export class App extends Component {
       c = c.toLowerCase(c);
       switch (c) {
         case 'd':
-          this.nextimg.bind(this)();
+          (this.state.remote ? this.nextRemImg.bind(this) : this.nextimg.bind(this))();
           break;
         case 'f':
           this.openpostmdl();
@@ -89,6 +91,28 @@ export class App extends Component {
 
     })
 
+  }
+
+  async nextRemImg(i = true) {
+
+    let ix = this.state.ix;
+    let max = this.state.rQueue.length;
+
+    if (ix === -1) {
+      return;
+    }
+
+    if (i) {
+      ix++;
+    }
+
+    if (ix >= max) {
+      ix = 0;
+    }
+
+    await this.setState({ ix: ix });
+
+    await this.openRemImage();
   }
 
   async nextimg(i = true) {
@@ -321,14 +345,14 @@ export class App extends Component {
 
     let scale = 1;
 
-    if(ax >= 1 && ay >= 1) {
+    if (ax >= 1 && ay >= 1) {
 
       scale = 1;
 
     } else {
 
       scale = Math.min(ax, ay);
-    
+
     }
 
     return { w: scale, h: scale };
@@ -423,6 +447,87 @@ export class App extends Component {
 
   }
 
+  async reset() {
+
+    //await this.rmimg();
+    await this.setState({ cs: [], queue: [], done: [], ix: 0 });
+    this.refs.files.value = "";
+
+  }
+
+  async openRemImage() {
+
+    let name = this.state.rQueue[this.state.ix];
+
+    if (!name) {
+      return;
+    }
+
+    let hdrs = ["alen"]
+
+    let x = await getimg(this.state.set, this.state.sset, name, hdrs);
+
+    if (!hdrs[0]) {
+      return;
+    }
+
+    let alen = Number(hdrs[0]);
+    //BlobBuilder = window.MozBlobBuilder || window.WebKitBlobBuilder || window.BlobBuilder;
+
+    let annot = x.substr(0, alen);
+    let imgb = x.substr(alen, x.length);
+    let instance = this;
+    var img = new Image();
+    var response = imgb;
+    var binary = "";
+
+    for (let i = 0; i < response.length; i++) {
+      binary += String.fromCharCode(response.charCodeAt(i) & 0xff);
+    }
+
+    img.onload = async function () {
+
+      let osize = { w: this.width, h: this.height };
+
+      instance.setdisplparams(osize);
+
+      await instance.setState({ cs: [instance.newcanvaselement(name)] });
+      instance.state.cs[0].cl = -1;
+      window.dispatchEvent(instance.state.cs[0].dispose);
+      let canvas = instance.newcanvaselement(name);
+      await instance.setState({ cs: pushret(instance.state.cs, canvas) });
+
+    }
+
+    let src = 'data:image/jpeg;base64,' + btoa(binary)
+
+    img.src = src;
+    instance.refs.imageView.setAttribute("src", src);
+
+  }
+
+  async remoteGetIndex() {
+
+    await this.reset();
+
+    let x = await getix(this.state.set, this.state.sset);
+
+    let queue = x.split("\n");
+
+    let fq = [];
+
+    for (let i = 0; i < queue.length; i++) {
+      if (queue[i]) {
+        fq.push(queue[i]);
+      }
+    }
+
+    await this.setState({ remote: true, rQueue: fq });
+
+    await this.openRemImage();
+
+  }
+
   // remove object at index
   async removeCanvas(ix) {
 
@@ -458,9 +563,10 @@ export class App extends Component {
 
   }
 
-  logout() {
+  async logout() {
     rmtoken();
     window.location = "/";
+
   }
 
   labelGenerate() {
@@ -532,7 +638,7 @@ export class App extends Component {
                     <div className="card-content">
                       <pre>
                         {
-                        this.cats(lb)
+                          this.cats(lb)
                         }
                       </pre>
                       <div className="row">
@@ -589,13 +695,23 @@ export class App extends Component {
                 </div>
                 <div>
                   <h5>Queue:</h5>
-                  <p>{this.state.queue && this.state.queue.map((n, i) => {
-                    if (i === this.state.ix) {
-                      return <span key={i} style={{ fontSize: 20 }}>{n.name + " "}</span>;
-                    } else {
-                      return <span key={i} style={{ color: "grey" }}>{n.name + " "}</span>
-                    }
-                  })}</p>
+                  <p>{this.state.remote ? (
+                    this.state.rQueue && this.state.rQueue.map((n, i) => {
+                      if (i === this.state.ix) {
+                        return <span key={i} style={{ fontSize: 20 }}>{n + " "}</span>;
+                      } else {
+                        return <span key={i} style={{ color: "grey" }}>{n + " "}</span>
+                      }
+                    })
+                  ) : (
+                      this.state.queue && this.state.queue.map((n, i) => {
+                        if (i === this.state.ix) {
+                          return <span key={i} style={{ fontSize: 20 }}>{n.name + " "}</span>;
+                        } else {
+                          return <span key={i} style={{ color: "grey" }}>{n.name + " "}</span>
+                        }
+                      })
+                    )}</p>
                 </div>
                 <div>
                   <h5>Done: {this.doneLength()} / {this.doneLength() + this.queueLength()} </h5>
@@ -607,19 +723,24 @@ export class App extends Component {
                 <div >
 
                   <button type="button"
-                    onClick={this.opensidenav.bind(this)}
+                    onClick={this.remoteGetIndex.bind(this)}
                     className="waves-effect waves-light btn"
-                    style={{ marginTop: 5 }}>Selected ( s )</button>
+                    style={{ marginTop: 5, marginRight: 10 }}>Load subset</button>
 
                   <button type="button"
-                    onClick={this.nextimg.bind(this)}
+                    onClick={this.opensidenav.bind(this)}
                     className="waves-effect waves-light btn"
-                    style={{ marginTop: 5, marginLeft: 10 }}>Next ( d ) </button>
+                    style={{ marginTop: 5, marginRight: 10 }}>Selected ( s )</button>
+
+                  <button type="button"
+                    onClick={this.state.remote ? this.nextRemImg.bind(this) : this.nextimg.bind(this)}
+                    className="waves-effect waves-light btn"
+                    style={{ marginTop: 5, marginRight: 10 }}>Next ( d ) </button>
 
                   <button type="button"
                     onClick={this.openpostmdl.bind(this)}
                     className="waves-effect waves-light btn"
-                    style={{ marginTop: 5, marginLeft: 10 }}>Send ( f ) </button>
+                    style={{ marginTop: 5, marginRight: 10 }}>Send ( f ) </button>
 
                 </div>
 

@@ -49,6 +49,10 @@ export class Canvas extends Component {
 
     window.addEventListener("keyup", this.handler);
 
+    if(this.props.xml) {
+      this.loadLabels(this.props.xml);
+    }
+
     // window.addEventListener(this.props.resize, () => {
     //   console.log(this.props.size.w - 5, this.props.size.h - 5);
 
@@ -80,9 +84,8 @@ export class Canvas extends Component {
       this.reset();
     }
 
-
   }
-
+  
   reset() {
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
