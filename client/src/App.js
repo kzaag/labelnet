@@ -214,16 +214,21 @@ export class App extends Component {
     try {
 
       let t = new TextEncoder().encode(lbody);
-      let x = bytes;//new TextEncoder().encode(bytes);
-      
-      let body = new Int8Array(t.length + x.length);
-      body.set(t);
-      for(let i = 0; i < bytes.length; i++) {
-        body[t.length+i] = bytes[i];
-      }
-      //body.set(x, t.length);
 
+      let x = bytes;//new TextEncoder().encode(bytes);
+      //console.log(x.length);
+      
       let offset = t.length;
+      let body = new Int8Array(offset + bytes.length);
+
+      body.set(t);
+      for(let i = 0; i < x.length; i++) {
+        body[offset+i] = x.charCodeAt(i);
+        // if(i < 100)
+        //   console.log(body[offset+i]);
+      }
+      //return;
+      //body.set(x, offset);
 
       await apipost(body, this.state.set, this.state.sset, name, offset);
       toast = '<span>OK</span>';
@@ -648,9 +653,10 @@ export class App extends Component {
 
     let src = 'data:image/jpeg;base64,' + btoa(binary);
 
-    this.setState({ rActive: binary });
+    this.setState({ rActive: imgb });
     img.src = src;
     instance.refs.imageView.setAttribute("src", src);
+    //
 
   }
 

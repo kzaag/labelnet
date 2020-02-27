@@ -65,7 +65,7 @@ export function xhr(url, method, token, body, hk, hv, rh) {
 
         xhr.onload = function (e) {
 
-            let r = xhr.responseText
+            let r = xhr.response;
             
             if(rh) {
                 for(let i =0; i < rh.length; i++) {
