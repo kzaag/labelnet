@@ -11,6 +11,27 @@ export function validate() {
     return xhr(api + "/v", "post", gettoken(), null, null, null);
 }
 
+export function getix(set, sset) {
+    return xhr(
+        api + "/i?s=" + set + "&ss=" + sset, 
+        "get", 
+        gettoken(), 
+        null, 
+        null, 
+        null);
+}
+
+export function getimg(set, sset, name, hdrs = []) {
+    return xhr(
+        api + "/i?s=" + set + "&ss=" + sset + "&n=" + name, 
+        "get", 
+        gettoken(), 
+        null, 
+        null, 
+        null,
+        hdrs);
+}
+
 export function post(img, set, sset, name, llen) {
 
     let hk = ["Content-type"];
@@ -25,12 +46,12 @@ export function post(img, set, sset, name, llen) {
         hv)
 }
 
-export function xhr(url, method, token, body, hk, hv) {
+export function xhr(url, method, token, body, hk, hv, rh) {
 
     return new Promise((res, rej) => {
 
         let xhr = new XMLHttpRequest();
-
+		xhr.overrideMimeType('text/plain; charset=x-user-defined');
         xhr.open(method, url);
 
         if (token)
@@ -43,9 +64,18 @@ export function xhr(url, method, token, body, hk, hv) {
         }
 
         xhr.onload = function (e) {
+
+            let r = xhr.response;
+            
+            if(rh) {
+                for(let i =0; i < rh.length; i++) {
+                    rh[i] = xhr.getResponseHeader(rh[i]);
+                }
+            }                
+
             switch (xhr.status) {
                 case 200:
-                    res(xhr.response);
+                    res(r);
                     break;
                 case 204:
                 case 304:
@@ -58,7 +88,7 @@ export function xhr(url, method, token, body, hk, hv) {
                 case 401:
                 case 403:
                 default:
-                    rej(xhr.status + "\n" + (xhr.response ?? ""));
+                    rej(xhr.status + "\n" + (r ?? ""));
                     break;
             }
             return;

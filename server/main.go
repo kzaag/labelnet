@@ -207,7 +207,8 @@ func Login(user, password string, c *Config) bool {
 
 func AddCors(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetCanonical([]byte("Access-Control-Allow-Origin"), []byte("*"))
-	ctx.Response.Header.SetCanonical([]byte("Access-Control-Allow-Headers"), []byte("x-user, x-password, Authorization, content-type"))
+	ctx.Response.Header.SetCanonical([]byte("Access-Control-Allow-Headers"), []byte("x-user, x-password, Authorization, content-type, alen"))
+	ctx.Response.Header.SetCanonical([]byte("Access-Control-Expose-Headers"), []byte("alen"))
 	ctx.Response.Header.SetCanonical([]byte("Access-Control-Allow-Methods"), []byte("POST, OPTIONS"))
 }
 
@@ -312,7 +313,17 @@ func AppendText(path string, text string, uid int, gid int, mode os.FileMode) er
 	defer f.Close()
 
 	if !exist {
-		os.Chown(path, uid, gid)
+		if err = os.Chown(path, uid, gid); err != nil {
+			return err
+		}
+	} else {
+		var c []byte
+		if c, err = ioutil.ReadFile(path); err != nil {
+			return err
+		}
+		if strings.Contains(string(c), text) {
+			return nil
+		}
 	}
 
 	if _, err := f.WriteString(text); err != nil {
@@ -415,12 +426,14 @@ func Mkdatafile(path string, content []byte, uid int, gid int, mode os.FileMode)
 
 	e, err = Exists(path)
 
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	if e {
-		return fmt.Errorf("data file already exists")
+		if err = os.Remove(path); err != nil {
+			return err
+		}
 	}
 
 	err = ioutil.WriteFile(path, content, mode)
@@ -513,6 +526,42 @@ func LBSave(lb *LBuffer, c *Config) error {
 	return nil
 }
 
+func WriteResponseBytes(ctx *fasthttp.RequestCtx, statusCode int, msg []byte) {
+
+	if len(msg) == 0 {
+
+		ctx.SetStatusCode(statusCode)
+
+	} else {
+
+		if _, err := ctx.Write(msg); err != nil {
+			ctx.SetStatusCode(500)
+		} else {
+			ctx.SetStatusCode(statusCode)
+		}
+
+	}
+
+}
+
+func WriteResponse(ctx *fasthttp.RequestCtx, statusCode int, msg string) {
+
+	if msg == "" {
+
+		ctx.SetStatusCode(statusCode)
+
+	} else {
+
+		if _, err := ctx.WriteString(msg); err != nil {
+			ctx.SetStatusCode(500)
+		} else {
+			ctx.SetStatusCode(statusCode)
+		}
+
+	}
+
+}
+
 func HandleLogin(ctx *fasthttp.RequestCtx, c *Config) {
 
 	uname := ""
@@ -540,8 +589,7 @@ func HandleLogin(ctx *fasthttp.RequestCtx, c *Config) {
 
 		} else {
 
-			ctx.WriteString(t)
-			ctx.SetStatusCode(200)
+			WriteResponse(ctx, 200, t)
 
 		}
 
@@ -552,8 +600,7 @@ func HandleValidate(ctx *fasthttp.RequestCtx, c *Config) {
 
 	if err := Authorize(&ctx.Request.Header, c); err != nil {
 
-		ctx.WriteString(err.Error())
-		ctx.SetStatusCode(401)
+		WriteResponse(ctx, 401, err.Error())
 
 	} else {
 
@@ -562,50 +609,134 @@ func HandleValidate(ctx *fasthttp.RequestCtx, c *Config) {
 	}
 }
 
-func HandleImg(ctx *fasthttp.RequestCtx, c *Config) {
+func HandlePostImg(ctx *fasthttp.RequestCtx, c *Config) {
 
 	if err := Authorize(&ctx.Request.Header, c); err != nil {
 
-		ctx.WriteString(err.Error())
-		ctx.SetStatusCode(401)
+		WriteResponse(ctx, 401, err.Error())
+		return
+
+	}
+
+	lbody := LBuffer{"", "", "", -1, nil}
+
+	ctx.Request.URI().QueryArgs().VisitAll(func(k, v []byte) {
+
+		switch strings.ToLower(string(k)) {
+		case "s":
+			lbody.set = string(v)
+		case "ss":
+			lbody.sset = string(v)
+		case "n":
+			lbody.label = string(v)
+		case "ll":
+			v, err := strconv.Atoi(string(v))
+			if err == nil {
+				lbody.llen = v
+			}
+		}
+
+	})
+
+	lbody.body = ctx.Request.Body()
+
+	if err := LBValidate(&lbody); err != nil {
+
+		WriteResponse(ctx, 401, err.Error())
+
+	} else if err := LBSave(&lbody, c); err != nil {
+
+		WriteResponse(ctx, 401, err.Error())
+	}
+
+}
+
+func HandleGetImg(ctx *fasthttp.RequestCtx, c *Config) {
+
+	var err error
+
+	if err = Authorize(&ctx.Request.Header, c); err != nil {
+		WriteResponse(ctx, 401, err.Error())
+		return
+	}
+
+	var set, sset, name string
+
+	ctx.Request.URI().QueryArgs().VisitAll(func(k, v []byte) {
+
+		switch strings.ToLower(string(k)) {
+		case "s":
+			set = string(v)
+		case "ss":
+			sset = string(v)
+		case "n":
+			name = string(v)
+		}
+
+	})
+
+	if name == "" {
+
+		spath := path.Join(c.dataroot, set, sset, "imagesets", "trainval.txt")
+
+		if !FExists(spath) {
+			WriteResponse(ctx, 404, "coudlnt access trainval.txt")
+			return
+		}
+
+		var bt []byte
+
+		if bt, err = ioutil.ReadFile(spath); err != nil {
+			WriteResponse(ctx, 500, "couldnt read from trainval.txt")
+			return
+		}
+
+		WriteResponseBytes(ctx, 200, bt)
 
 	} else {
 
-		lbody := LBuffer{"", "", "", -1, nil}
+		apath := path.Join(c.dataroot, set, sset, "annotations", name+".xml")
+		jpath := path.Join(c.dataroot, set, sset, "jpegimages", name+".jpg")
 
-		ctx.Request.URI().QueryArgs().VisitAll(func(k, v []byte) {
-
-			switch strings.ToLower(string(k)) {
-			case "s":
-				lbody.set = string(v)
-			case "ss":
-				lbody.sset = string(v)
-			case "n":
-				lbody.label = string(v)
-			case "ll":
-				v, err := strconv.Atoi(string(v))
-				if err == nil {
-					lbody.llen = v
-				}
-			}
-
-		})
-
-		lbody.body = ctx.Request.Body()
-
-		if err := LBValidate(&lbody); err != nil {
-
-			ctx.WriteString(err.Error())
-			ctx.SetStatusCode(400)
-
-		} else if err := LBSave(&lbody, c); err != nil {
-
-			ctx.WriteString(err.Error())
-			ctx.SetStatusCode(500)
-
+		if !FExists(apath) {
+			WriteResponse(ctx, 404, "coudlnt access image")
+			return
 		}
 
+		if !FExists(jpath) {
+			WriteResponse(ctx, 404, "coudlnt access annotation")
+			return
+		}
+
+		var annotation []byte
+
+		if annotation, err = ioutil.ReadFile(apath); err != nil {
+			WriteResponse(ctx, 500, "couldnt read image")
+			return
+		}
+
+		var jpg []byte
+
+		if jpg, err = ioutil.ReadFile(jpath); err != nil {
+			WriteResponse(ctx, 500, "couldnt read annotation")
+			return
+		}
+
+		ctx.Response.Header.Set("alen", strconv.Itoa(len(annotation)))
+
+		if _, err = ctx.Write(annotation); err != nil {
+			ctx.SetStatusCode(500)
+			return
+		}
+
+		if _, err = ctx.Write(jpg); err != nil {
+			ctx.SetStatusCode(500)
+			return
+		}
+
+		ctx.SetStatusCode(200)
 	}
+
 }
 
 func main() {
@@ -613,7 +744,7 @@ func main() {
 	config := Config{}
 
 	if err := CRead(&config, "main.conf"); err != nil {
-		fmt.Printf(err.Error())
+		fmt.Print(err.Error())
 		os.Exit(1)
 	}
 
@@ -639,7 +770,17 @@ func main() {
 
 		case "/i":
 
-			HandleImg(ctx, &config)
+			if ctx.IsPost() {
+
+				HandlePostImg(ctx, &config)
+
+			} else {
+
+				HandleGetImg(ctx, &config)
+
+			}
+
+		case "/g":
 
 		default:
 			ctx.SetStatusCode(404)
@@ -651,7 +792,7 @@ func main() {
 	err := s.ListenAndServe(config.url)
 
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 

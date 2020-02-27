@@ -1,3 +1,4 @@
 api
 *.conf
 bin/**
+*.sum
