@@ -49,23 +49,15 @@ export class Canvas extends Component {
 
     window.addEventListener("keyup", this.handler);
 
-    if(this.props.xml) {
-      this.loadLabels(this.props.xml);
+    if(this.props.obj) {
+      let obj = this.props.obj;
+      this.ctx.beginPath();
+      this.ctx.rect(obj.xmin, obj.ymin, (obj.xmax - obj.xmin), (obj.ymax - obj.ymin));
+      this.ctx.stroke();
+      this.props.onfin(obj.xmin, obj.ymin, obj.xmax, obj.xmax, 8, this.state.ccolor);
+      window.removeEventListener("keyup", this.handler);
     }
 
-    // window.addEventListener(this.props.resize, () => {
-    //   console.log(this.props.size.w - 5, this.props.size.h - 5);
-
-    //   if(!this.canvas) {
-    //     return;
-    //   }
-
-
-    //   this.canvas.width=this.props.size.w - 5;
-    //   this.canvas.height=this.props.size.h - 5;
-    //   this.ctx = this.canvas.getContext("2d");
-
-    // }, false);
   }
 
   mdown(e) {
@@ -85,7 +77,7 @@ export class Canvas extends Component {
     }
 
   }
-  
+
   reset() {
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);

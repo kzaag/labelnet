@@ -37,7 +37,8 @@ export class App extends Component {
     lname: "",
     lbody: "",
     remote: false,
-    rQueue: []
+    rQueue: [],
+    rActive: null
   };
 
   fname = "";
@@ -138,6 +139,26 @@ export class App extends Component {
 
   }
 
+  async rmRemImg() {
+
+    let ix = this.state.ix;
+    let queue = this.state.rQueue;
+    let el = queue[ix];
+
+    await this.setState({ done: pushret(this.state.done, el) });
+
+    if (queue.length <= 1) {
+      ix = -1;
+    }
+
+    await this.setState({ rQueue: rmret(queue, ix), ix: ix });
+
+    await this.removeCanvas(-1);
+
+    this.refs.imageView.setAttribute("src", "");
+
+  }
+
   async rmimg() {
 
     let ix = this.state.ix;
@@ -171,6 +192,52 @@ export class App extends Component {
     let elem = document.getElementById("cmodal");
     let instance = window.M.Modal.getInstance(elem);
     instance.open();
+
+  }
+
+  async remPost() {
+    let ix = this.state.ix;
+    if (ix === -1) {
+      return;
+    }
+
+    let name = this.state.rQueue[ix];
+    let bytes = this.state.rActive;
+    let lbody = this.state.lbody;
+
+    if (!bytes || !name) {
+      return;
+    }
+
+    let toast = '';
+
+    try {
+
+      let t = new TextEncoder().encode(lbody);
+      let x = bytes;//new TextEncoder().encode(bytes);
+      
+      let body = new Int8Array(t.length + x.length);
+      body.set(t);
+      for(let i = 0; i < bytes.length; i++) {
+        body[t.length+i] = bytes[i];
+      }
+      //body.set(x, t.length);
+
+      let offset = t.length;
+
+      await apipost(body, this.state.set, this.state.sset, name, offset);
+      toast = '<span>OK</span>';
+      window.M.toast({ html: toast, classes: "green darken-1" });
+
+    } catch (err) {
+      toast = '<span>couldnt save image.<br/>server says: ' + err + '</span>';
+      window.M.toast({ html: toast, inDuration: 2000, classes: "red darken-1" });
+      return;
+    }
+
+    await this.rmRemImg();
+
+    await this.nextRemImg(false);
 
   }
 
@@ -265,9 +332,9 @@ export class App extends Component {
       "    <small>" + false + "</small>\n" +
       "    <bndbox>\n" +
       "        <xmax>" + c.xmax + "</xmax>\n" +
-      "        <xmin>" + c.xmin + "</xmax>\n" +
-      "        <ymax>" + c.ymax + "</xmax>\n" +
-      "        <ymin>" + c.ymin + "</xmax>\n" +
+      "        <xmin>" + c.xmin + "</xmin>\n" +
+      "        <ymax>" + c.ymax + "</ymax>\n" +
+      "        <ymin>" + c.ymin + "</ymin>\n" +
       "    </bndbox>\n" +
       "    <point>\n" +
       "        <x>" + (c.xmin + c.xmax) / 2 + "</x>\n" +
@@ -287,7 +354,7 @@ export class App extends Component {
     );
   }
 
-  newcanvaselement(nm) {
+  newcanvaselement(nm, obj) {
 
     let den = rnds(10);
     //let ren = rnds(10);
@@ -295,18 +362,38 @@ export class App extends Component {
     var dispe = new Event(den);
     //var rese = new Event(ren);
 
-    return {
-      canvas: <Canvas dispose={den} size={this.state.dsize} img={this.refs.imageView} onfin={this.onfin.bind(this)} />,
-      xmin: 0,
-      ymin: 0,
-      xmax: 0,
-      ymax: 0,
-      cl: -1,
-      color: "",
-      dispose: dispe,
-      //resize: rese,
-      name: nm
+    if (obj) {
+
+      return {
+        canvas: <Canvas dispose={den} size={this.state.dsize} img={this.refs.imageView} onfin={this.onfin.bind(this)} obj={obj} />,
+        xmin: obj.xmin,
+        ymin: obj.ymin,
+        xmax: obj.xmax,
+        ymax: obj.ymax,
+        cl: -1,
+        color: "",
+        dispose: dispe,
+        //resize: rese,
+        name: nm
+      }
+
+    } else {
+
+      return {
+        canvas: <Canvas dispose={den} size={this.state.dsize} img={this.refs.imageView} onfin={this.onfin.bind(this)} />,
+        xmin: 0,
+        ymin: 0,
+        xmax: 0,
+        ymax: 0,
+        cl: -1,
+        color: "",
+        dispose: dispe,
+        //resize: rese,
+        name: nm
+      }
+
     }
+
   }
 
   onfin(x1, y1, x2, y2, c, color) {
@@ -430,7 +517,7 @@ export class App extends Component {
 
   async uploadfiles() {
 
-    await this.setState({ cs: [] });
+    await this.setState({ cs: [], remote: false });
 
     let fileInput = this.refs.p_image;
 
@@ -453,6 +540,60 @@ export class App extends Component {
     await this.setState({ cs: [], queue: [], done: [], ix: 0 });
     this.refs.files.value = "";
 
+  }
+
+  xml_tag(xml, tag) {
+    let n0 = "<" + tag + ">";
+    let n1 = "</" + tag + ">";
+    let ret = xml.substr(
+      xml.indexOf(n0) + n0.length,
+      xml.indexOf(n1) - xml.indexOf(n0) - n0.length);
+    return ret
+  }
+
+  xml_obj(xml) {
+
+    let name = this.xml_tag(xml, "name");
+    let bndboxxml = this.xml_tag(xml, "bndbox");
+    let xmax = Number(this.xml_tag(bndboxxml, "xmax"));
+    let xmin = Number(this.xml_tag(bndboxxml, "xmin"));
+    let ymax = Number(this.xml_tag(bndboxxml, "ymax"));
+    let ymin = Number(this.xml_tag(bndboxxml, "ymin"));
+
+    xmax = R(xmax * this.state.scale.w);
+    xmin = R(xmin * this.state.scale.w);
+    ymax = R(ymax * this.state.scale.h);
+    ymin = R(ymin * this.state.scale.h);
+
+    return {
+      name: name,
+      xmax: xmax,
+      xmin: xmin,
+      ymax: ymax,
+      ymin: ymin
+    };
+
+  }
+
+  xml_annot(xml) {
+
+    let tag = "<object>";
+
+    let objs = [];
+
+    while (true) {
+      let i = xml.indexOf(tag);
+      if (i === -1) {
+        break;
+      }
+      xml = xml.substr(i, xml.length - i);
+      let o = this.xml_obj(xml);
+      xml = xml.substr(tag.length, xml.length - tag.length);
+
+      objs.push(o);
+    }
+
+    return objs;
   }
 
   async openRemImage() {
@@ -478,11 +619,10 @@ export class App extends Component {
     let imgb = x.substr(alen, x.length);
     let instance = this;
     var img = new Image();
-    var response = imgb;
     var binary = "";
 
-    for (let i = 0; i < response.length; i++) {
-      binary += String.fromCharCode(response.charCodeAt(i) & 0xff);
+    for (let i = 0; i < imgb.length; i++) {
+      binary += String.fromCharCode(imgb.charCodeAt(i) & 0xff);
     }
 
     img.onload = async function () {
@@ -494,13 +634,21 @@ export class App extends Component {
       await instance.setState({ cs: [instance.newcanvaselement(name)] });
       instance.state.cs[0].cl = -1;
       window.dispatchEvent(instance.state.cs[0].dispose);
+
+      let objs = instance.xml_annot(annot);
+
+      for (let i = 0; i < objs.length; i++) {
+        let canvas = instance.newcanvaselement(name, objs[i]);
+        await instance.setState({ cs: pushret(instance.state.cs, canvas) });
+      }
+
       let canvas = instance.newcanvaselement(name);
       await instance.setState({ cs: pushret(instance.state.cs, canvas) });
-
     }
 
-    let src = 'data:image/jpeg;base64,' + btoa(binary)
+    let src = 'data:image/jpeg;base64,' + btoa(binary);
 
+    this.setState({ rActive: binary });
     img.src = src;
     instance.refs.imageView.setAttribute("src", src);
 
@@ -609,7 +757,7 @@ export class App extends Component {
           </div>
           <div className="modal-footer">
             <button className="modal-close waves-effect waves-green btn-flat">anuluj</button>
-            <button onClick={this.post.bind(this)} className="modal-close waves-effect waves-green btn-flat">potwierdź</button>
+            <button onClick={this.state.remote ? this.remPost.bind(this) : this.post.bind(this)} className="modal-close waves-effect waves-green btn-flat">potwierdź</button>
           </div>
         </div>
 

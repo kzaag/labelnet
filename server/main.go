@@ -316,6 +316,14 @@ func AppendText(path string, text string, uid int, gid int, mode os.FileMode) er
 		if err = os.Chown(path, uid, gid); err != nil {
 			return err
 		}
+	} else {
+		var c []byte
+		if c, err = ioutil.ReadFile(path); err != nil {
+			return err
+		}
+		if strings.Contains(string(c), text) {
+			return nil
+		}
 	}
 
 	if _, err := f.WriteString(text); err != nil {
@@ -418,12 +426,14 @@ func Mkdatafile(path string, content []byte, uid int, gid int, mode os.FileMode)
 
 	e, err = Exists(path)
 
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	if e {
-		return fmt.Errorf("data file already exists")
+		if err = os.Remove(path); err != nil {
+			return err
+		}
 	}
 
 	err = ioutil.WriteFile(path, content, mode)
