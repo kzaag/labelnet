@@ -60,6 +60,16 @@ export function mapcl(key, i = 0) {
     return LABELS[key][i] ?? "unknown";
 }
 
+export function rmapcl(name) {
+    for(let k in LABELS) {
+        let n = LABELS[k][0];
+        if(n === name)
+            return k;
+    }
+
+    return -1;
+}
+
 export function R(v) {
     return Math.round(v);
 }

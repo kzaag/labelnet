@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Canvas } from './Canvas';
 import { post as apipost, getix, getimg } from './api';
-import { pushret, mapcl, rnds, R, rmtoken, rmret } from './helpers';
+import { pushret, mapcl, rnds, R, rmtoken, rmret, rmapcl } from './helpers';
 import { DEFAULT_SET, DEFAULT_SSET } from './config';
 
 export class App extends Component {
@@ -92,6 +92,13 @@ export class App extends Component {
 
     })
 
+  }
+
+  async selRemImg(i) {
+
+    await this.setState({ ix: i });
+
+    await this.openRemImage();
   }
 
   async nextRemImg(i = true) {
@@ -559,6 +566,7 @@ export class App extends Component {
   xml_obj(xml) {
 
     let name = this.xml_tag(xml, "name");
+    name = Number(rmapcl(name));
     let bndboxxml = this.xml_tag(xml, "bndbox");
     let xmax = Number(this.xml_tag(bndboxxml, "xmax"));
     let xmin = Number(this.xml_tag(bndboxxml, "xmin"));
@@ -852,9 +860,9 @@ export class App extends Component {
                   <p>{this.state.remote ? (
                     this.state.rQueue && this.state.rQueue.map((n, i) => {
                       if (i === this.state.ix) {
-                        return <span key={i} style={{ fontSize: 20 }}>{n + " "}</span>;
+                        return <span onClick={() => this.selRemImg(i)} key={i} style={{ fontSize: 20, cursor: "pointer" }}>{n + " "}</span>;
                       } else {
-                        return <span key={i} style={{ color: "grey" }}>{n + " "}</span>
+                        return <span onClick={() => this.selRemImg(i)} key={i} style={{ color: "grey", cursor: "pointer" }}>{n + " "}</span>
                       }
                     })
                   ) : (

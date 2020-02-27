@@ -54,10 +54,17 @@ export class Canvas extends Component {
       this.ctx.beginPath();
       this.ctx.rect(obj.xmin, obj.ymin, (obj.xmax - obj.xmin), (obj.ymax - obj.ymin));
       this.ctx.stroke();
-      this.props.onfin(obj.xmin, obj.ymin, obj.xmax, obj.xmax, 8, this.state.ccolor);
+      this.addtext(obj.xmin, obj.ymin, obj.name);
+      this.props.onfin(obj.xmin, obj.ymin, obj.xmax, obj.xmax, obj.name, this.state.ccolor);
       window.removeEventListener("keyup", this.handler);
     }
 
+  }
+
+  addtext(x, y, c) {
+    this.ctx.font = "18px Arial";
+    this.ctx.fillStyle = this.state.ccolor;
+    this.ctx.fillText(mapcl(c), x, y - 5); 
   }
 
   mdown(e) {
@@ -115,6 +122,7 @@ export class Canvas extends Component {
     let y2 = Math.max(this.p1.y, this.p2.y);
     this.p1 = null;
     this.p2 = null;
+    this.addtext(x1, y1, this.cl);
     this.props.onfin(R(x1), R(y1), R(x2), R(y2), this.cl, this.state.ccolor);
     window.removeEventListener("keyup", this.handler);
   }
