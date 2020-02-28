@@ -55,7 +55,7 @@ export class Canvas extends Component {
       this.ctx.rect(obj.xmin, obj.ymin, (obj.xmax - obj.xmin), (obj.ymax - obj.ymin));
       this.ctx.stroke();
       this.addtext(obj.xmin, obj.ymin, obj.name);
-      this.props.onfin(obj.xmin, obj.ymin, obj.xmax, obj.xmax, obj.name, this.state.ccolor);
+      this.props.onfin(obj.xmin, obj.ymin, obj.xmax, obj.ymax, obj.name, this.state.ccolor);
       window.removeEventListener("keyup", this.handler);
     }
 
