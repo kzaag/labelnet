@@ -23,8 +23,14 @@ export class Canvas extends Component {
   labels = clrng();
   popupH = this.labels.length * 65;
 
-
   handler = this.resetev.bind(this);
+
+  constructor(props) {
+    super(props);
+    if(this.props.dcl && this.props.dcl !== -1) {
+      this.cl = this.props.dcl;
+    }
+  }
 
   async componentDidMount() {
 

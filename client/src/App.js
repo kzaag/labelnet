@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import { Canvas } from './Canvas';
 import { post as apipost, getix, getimg } from './api';
-import { pushret, mapcl, rnds, R, rmtoken, rmret, rmapcl } from './helpers';
+import { pushret, mapcl, rnds, R, rmtoken, rmret, rmapcl, clrng } from './helpers';
 import { DEFAULT_SET, DEFAULT_SSET } from './config';
 
 export class App extends Component {
 
   state = {
+    dcl: -1,
     // original picture size
     osize: {
       w: 800,
@@ -224,13 +225,13 @@ export class App extends Component {
 
       let x = bytes;//new TextEncoder().encode(bytes);
       //console.log(x.length);
-      
+
       let offset = t.length;
       let body = new Int8Array(offset + bytes.length);
 
       body.set(t);
-      for(let i = 0; i < x.length; i++) {
-        body[offset+i] = x.charCodeAt(i);
+      for (let i = 0; i < x.length; i++) {
+        body[offset + i] = x.charCodeAt(i);
         // if(i < 100)
         //   console.log(body[offset+i]);
       }
@@ -317,6 +318,9 @@ export class App extends Component {
 
     this.setdisplparams({ w: 800, h: 500 });
 
+    elems = document.querySelectorAll('select');
+    window.M.FormSelect.init(elems, {});
+
   }
 
   opensidenav() {
@@ -392,7 +396,7 @@ export class App extends Component {
     } else {
 
       return {
-        canvas: <Canvas dispose={den} size={this.state.dsize} img={this.refs.imageView} onfin={this.onfin.bind(this)} />,
+        canvas: <Canvas dispose={den} size={this.state.dsize} img={this.refs.imageView} onfin={this.onfin.bind(this)} dcl={this.state.dcl} />,
         xmin: 0,
         ymin: 0,
         xmax: 0,
@@ -844,6 +848,16 @@ export class App extends Component {
                   <input value={this.state.sset} onChange={(e) => this.setState({ sset: e.target.value })} id="sseti" type="text" className="validate" />
                   <label htmlFor="sseti">subset name</label>
                 </div>
+                <div className="input-field">
+                  <select value={this.state.dcl} 
+                          onChange={(e) => {
+                            this.setState({ dcl: Number(e.target.value) });
+                          }}>
+                    <option key="-1" value="-1" disabled>select class...</option>
+                    {clrng().map(x => <option key={x} value={x}>{mapcl(x) + " " + mapcl(x, 1)}</option>)}
+                  </select>
+                  <label>default class</label>
+                </div>
                 <div className="file-field input-field">
                   <div className="btn">
                     <span>upload jpgs</span>
@@ -881,7 +895,6 @@ export class App extends Component {
                     return <span key={i} style={{ color: "grey" }}>{n + " "}</span>
                   })}</p>
                 </div>
-
                 <div >
 
                   <button type="button"
