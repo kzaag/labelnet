@@ -21,7 +21,7 @@ export class Canvas extends Component {
 
   labels = [];
   labels = clrng();
-  popupH = this.labels.length * 65;
+  popupH = 100;
 
   handler = this.resetev.bind(this);
 
